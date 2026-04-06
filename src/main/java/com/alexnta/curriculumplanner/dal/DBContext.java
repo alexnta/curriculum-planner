@@ -16,8 +16,6 @@ public class DBContext {
 
     private static final String DEFAULT_URL =
             "jdbc:sqlserver://localhost:1433;databaseName=CurriculumPlanner;encrypt=true;trustServerCertificate=true";
-    private static final String DEFAULT_USER = "sa";
-    private static final String DEFAULT_PASSWORD = "12345";
 
     public Connection getConnection() throws SQLException {
         return DriverManager.getConnection(getUrl(), getUser(), getPassword());
@@ -28,18 +26,34 @@ public class DBContext {
     }
 
     private String getUser() {
-        return getValue("CURRICULUM_DB_USER", DEFAULT_USER);
+        return getRequiredValue("CURRICULUM_DB_USER");
     }
 
     private String getPassword() {
-        return getValue("CURRICULUM_DB_PASSWORD", DEFAULT_PASSWORD);
+        return getRequiredValue("CURRICULUM_DB_PASSWORD");
     }
 
     private String getValue(String key, String defaultValue) {
-        String value = System.getenv(key);
+        String value = getConfigValue(key);
         if (value == null || value.isBlank()) {
             return defaultValue;
         }
         return value;
+    }
+
+    private String getRequiredValue(String key) {
+        String value = getConfigValue(key);
+        if (value == null || value.isBlank()) {
+            throw new IllegalStateException("Missing required environment variable: " + key);
+        }
+        return value;
+    }
+
+    private String getConfigValue(String key) {
+        String systemProperty = System.getProperty(key);
+        if (systemProperty != null && !systemProperty.isBlank()) {
+            return systemProperty;
+        }
+        return System.getenv(key);
     }
 }
